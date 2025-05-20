@@ -1,0 +1,23 @@
+[project]
+name = "timesheet-mcp"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Tomas Pachovsky",email = "tomas.pachovsky@actumdigital.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests (>=2.32.3,<3.0.0)",
+    "python-dotenv (>=1.1.0,<2.0.0)",
+    "mcp[cli] (>=1.9.0,<2.0.0)",
+    "openai-agents (>=0.0.15,<0.0.16)"
+]
+
+[tool.poetry]
+packages = [{include = "timesheet_mcp", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
