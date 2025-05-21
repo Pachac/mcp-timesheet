@@ -74,3 +74,19 @@ def add_timesheet(
     """
     timesheet = ts_client.add_timesheet(project_id, activity_id, date, hours, description, issue_id)
     return timesheet
+
+@app.tool()
+def store_output(output: str, file_name: str) -> str:
+    """
+    Store text output into a file.
+    :param output: Text output to be stored
+    :param file_name: Name of the file to store the output
+    """
+    try:
+        # Ensure the directory exists
+        os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+        with open(f"{cfg.OUTPUT_DIR}/{file_name}", "w") as f:
+            f.write(output)
+        return f"Output stored as {file_name}"
+    except Exception as e:
+        return f"Error storing output: {str(e)}"

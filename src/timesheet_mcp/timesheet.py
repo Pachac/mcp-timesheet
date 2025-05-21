@@ -120,7 +120,7 @@ class TimesheetClient:
         if issue_id:
             data["timeEntry"]["issue_id"] = issue_id
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 201:
+        if response.status_code == 200:
             return response.json()
         else:
             print("Status code:", response.status_code)
