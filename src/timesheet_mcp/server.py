@@ -61,7 +61,7 @@ def add_timesheet(
         date: str, 
         hours: float, 
         description: str,
-        issue_id: int = None) -> ts.TimesheetEntry:
+        issue_id: int | None = None) -> ts.TimesheetEntry:
     """
     Add a timesheet entry for a specific project, activity, and date. The date format is YYYY-MM-DD.
     :param project_id: ID of the project
