@@ -60,7 +60,7 @@ def add_timesheet(
         activity_id: int,
         date: str, 
         hours: float, 
-        description: str,
+        comments: str,
         issue_id: int | None = None) -> ts.TimesheetEntry:
     """
     Add a timesheet entry for a specific project, activity, and date. The date format is YYYY-MM-DD.
@@ -72,8 +72,60 @@ def add_timesheet(
     :param issue_id: ID of the issue (optional)
     :return: Timesheet entry
     """
-    timesheet = ts_client.add_timesheet(project_id, activity_id, date, hours, description, issue_id)
+    entry = ts.TimesheetEntryInput(
+        project_id=project_id,
+        activity_id=activity_id,
+        date=date,
+        hours=hours,
+        comments=comments,
+        issue_id=issue_id
+    )
+    timesheet = ts_client.add_timesheet_entry(entry)
     return timesheet
+
+@app.tool()
+def edit_timesheet(
+        entry_id: int,
+        project_id: int,
+        activity_id: int,
+        date: str, 
+        hours: float, 
+        comments: str,
+        issue_id: int | None = None) -> str:
+    """
+    Edit a timesheet entry for a specific project, activity, and date. The date format is YYYY-MM-DD.
+    :param entry_id: ID of the timesheet entry to be edited
+    :param project_id: ID of the project
+    :param activity_id: ID of the activity
+    :param date: Date of the timesheet entry
+    :param hours: Number of hours worked
+    :param description: Description of the timesheet entry
+    :param issue_id: ID of the issue (optional)
+    :return: Edited timesheet entry
+    """
+    entry = ts.TimesheetEntryInput(
+        project_id=project_id,
+        activity_id=activity_id,
+        date=date,
+        hours=hours,
+        comments=comments,
+        issue_id=issue_id
+    )
+    message = ts_client.edit_timesheet_entry(entry_id, entry)
+    return message
+
+@app.tool()
+def delete_timesheet(entry_id: int) -> str:
+    """
+    Delete a timesheet entry by its ID.
+    :param entry_id: ID of the timesheet entry to be deleted
+    :return: Confirmation message
+    """
+    try:
+        ts_client.delete_timesheet_entry(entry_id)
+        return f"Timesheet entry with ID {entry_id} deleted successfully."
+    except Exception as e:
+        return f"Error deleting timesheet entry: {str(e)}"
 
 @app.tool()
 def store_output(output: str, file_name: str) -> str:

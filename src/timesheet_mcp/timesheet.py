@@ -1,6 +1,8 @@
 import requests
-from pydantic import BaseModel
-import json
+from pydantic import BaseModel, field_validator
+from datetime import datetime, timedelta
+import re
+
 
 class Project(BaseModel):
     id: int
@@ -25,6 +27,59 @@ class TimesheetEntry(BaseModel):
     issue: Issue
     spent_on: str
 
+    @field_validator("spent_on", mode="before")
+    @classmethod
+    def adjust_spent_on(cls, value: str) -> str:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            return value
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        midnight = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_midnight = midnight + timedelta(days=1)
+        if (dt - midnight) <= (next_midnight - dt):
+            adjusted = midnight
+        else:
+            adjusted = next_midnight
+        return adjusted.date().isoformat()
+
+class TimesheetEntryInput(BaseModel):
+    hours: float
+    comments: str
+    activity_id: int
+    project_id: int
+    date: str
+    issue_id: int | None = None
+
+    def to_create_dict(self) -> dict[str, dict[str, str | dict[str, str | int| None]]]:
+            return {
+            "interval": {
+                "start": self.date,
+                "end": self.date
+            },
+            "timeEntry": {
+                "time_entry": {
+                    "activity_id": self.activity_id,
+                    "issue_id": self.issue_id,
+                    "comments": self.comments,
+                    "hours": str(self.hours),
+                    "project_id": self.project_id,
+                    "spent_on": self.date
+                }
+            }
+        }
+
+    def to_update_dict(self) -> dict[str, dict[str, str | dict[str, str | int| None]]]:
+        return {
+            "timeEntryUpdate": {
+                    "time_entry": {
+                        "activity_id": self.activity_id,
+                        "issue_id": self.issue_id,
+                        "comments": self.comments,
+                        "hours": str(self.hours),
+                        "project_id": self.project_id,
+                        "spent_on": self.date
+                    }
+                }
+        }
 
 class TimesheetClient:
     token = None
@@ -51,7 +106,7 @@ class TimesheetClient:
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            return [Project(**project) for project in response.json()]
         else:
             raise Exception("Failed to fetch projects: " + response.text)
         
@@ -62,7 +117,7 @@ class TimesheetClient:
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            return [Activity(**activity) for activity in response.json()]
         else:
             raise Exception("Failed to fetch activities: " + response.text)
         
@@ -73,7 +128,7 @@ class TimesheetClient:
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            return [Issue(**issue) for issue in response.json()]
         else:
             raise Exception("Failed to fetch issues: " + response.text)
 
@@ -84,45 +139,50 @@ class TimesheetClient:
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            return [TimesheetEntry(**entry) for entry in response.json()]
         else:
             raise Exception("Failed to fetch timesheets: " + response.text)
         
-    def add_timesheet(self, 
-                      project_id: int,
-                      activity_id: int,
-                      date: str, 
-                      hours: float, 
-                      description: str,
-                      issue_id: int = None) -> TimesheetEntry:
+    def add_timesheet_entry(self, entry: TimesheetEntryInput) -> TimesheetEntry:
         url = f"{self.base_url}/timeEntries"
         headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
-        data = {
-            "interval": {
-                "start": date,
-                "end": date
-            },
-            "timeEntry": {
-                "time_entry": {
-                    "activity_id": activity_id,
-                    "issue_id": issue_id,
-                    "comments": description,
-                    "hours": str(hours),
-                    "project_id": project_id,
-                    "spent_on": date
-                }
-            }
-        }
-        print(json.dumps(data, indent=4))
-        if issue_id:
-            data["timeEntry"]["issue_id"] = issue_id
+        data = entry.to_create_dict()
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
-            return response.json()
+            return TimesheetEntry(**response.json())
         else:
             print("Status code:", response.status_code)
             print("Response:", response.text)
             raise Exception("Failed to add timesheet entry: " + response.text)
+        
+    def edit_timesheet_entry(self, entry_id: int ,entry: TimesheetEntryInput) -> str:
+        url = f"{self.base_url}/timeEntries/{entry_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        data = entry.to_update_dict()
+        response = requests.put(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.text.strip('"')
+        else:
+            print("Status code:", response.status_code)
+            print("Response:", response.text)
+            raise Exception("Failed to edit timesheet entry: " + response.text)
+    
+    def delete_timesheet_entry(self, entry_id: int) -> bool:
+        url = f"{self.base_url}/timeEntries/{entry_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.delete(url, headers=headers)
+        if response.status_code == 200:
+            return True
+        else:
+            print("Status code:", response.status_code)
+            print("Response:", response.text)
+            raise Exception("Failed to delete timesheet entry: " + response.text)
