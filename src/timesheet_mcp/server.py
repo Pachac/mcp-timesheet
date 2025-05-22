@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import FastMCP
-import timesheet as ts
-import config as cfg
+import timesheet_mcp.timesheet as ts
+import timesheet_mcp.models as models
+import timesheet_mcp.config as cfg
 import os
 
 app = FastMCP(
@@ -10,11 +11,11 @@ app = FastMCP(
 
 ts_client = ts.TimesheetClient(
     username="tomas.pachovsky",
-    password=cfg.TS_PW
+    password=cfg.PW
 )
 
 @app.tool()
-def get_projects() -> list[ts.Project]:
+def get_projects() -> list[models.Project]:
     """
     Get all projects available to be filled in the timesheet
     :return: List of projects
@@ -23,7 +24,7 @@ def get_projects() -> list[ts.Project]:
     return projects
 
 @app.tool()
-def get_activities(project_id: int) -> list[ts.Activity]:
+def get_activities(project_id: int) -> list[models.Activity]:
     """
     Get all activities available to be filled in the timesheet for a specific project
     :param project_id: ID of the project
@@ -34,7 +35,7 @@ def get_activities(project_id: int) -> list[ts.Activity]:
 
 
 @app.tool()
-def get_issues(project_id: int) -> list[ts.Issue]:
+def get_issues(project_id: int) -> list[models.Issue]:
     """
     Get all issues available to be filled in the timesheet for a specific project
     :param project_id: ID of the project
@@ -44,7 +45,7 @@ def get_issues(project_id: int) -> list[ts.Issue]:
     return issues
 
 @app.tool()
-def get_timesheets(start_date: str, end_date: str) -> list[ts.TimesheetEntry]:
+def get_timesheets(start_date: str, end_date: str) -> list[models.TimesheetEntry]:
     """
     Get all timesheet entries for a specific date range. The date format is YYYY-MM-DD.
     :param start_date: Start date of the timesheet
@@ -61,7 +62,7 @@ def add_timesheet(
         date: str, 
         hours: float, 
         comments: str,
-        issue_id: int | None = None) -> ts.TimesheetEntry:
+        issue_id: int | None = None) -> list[models.TimesheetEntry]:
     """
     Add a timesheet entry for a specific project, activity, and date. The date format is YYYY-MM-DD.
     :param project_id: ID of the project
@@ -72,7 +73,7 @@ def add_timesheet(
     :param issue_id: ID of the issue (optional)
     :return: Timesheet entry
     """
-    entry = ts.TimesheetEntryInput(
+    entry = models.TimesheetEntryInput(
         project_id=project_id,
         activity_id=activity_id,
         date=date,
@@ -103,7 +104,7 @@ def edit_timesheet(
     :param issue_id: ID of the issue (optional)
     :return: Edited timesheet entry
     """
-    entry = ts.TimesheetEntryInput(
+    entry = models.TimesheetEntryInput(
         project_id=project_id,
         activity_id=activity_id,
         date=date,
@@ -142,3 +143,9 @@ def store_output(output: str, file_name: str) -> str:
         return f"Output stored as {file_name}"
     except Exception as e:
         return f"Error storing output: {str(e)}"
+
+def run():
+    """
+    Run the FastMCP server.
+    """
+    app.run()
