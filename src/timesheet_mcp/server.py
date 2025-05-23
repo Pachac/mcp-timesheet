@@ -10,8 +10,8 @@ app = FastMCP(
 )
 
 ts_client = ts.TimesheetClient(
-    username="tomas.pachovsky",
-    password=cfg.PW
+    username=cfg.USERNAME,
+    password=cfg.PW,
 )
 
 @app.tool()
