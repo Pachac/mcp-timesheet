@@ -8,11 +8,19 @@ app = FastMCP(
     name="Timesheet",
     instructions="Timesheet Management System"
 )
-
-ts_client = ts.TimesheetClient(
-    username=cfg.USERNAME,
-    password=cfg.PW,
-)
+if cfg.TOKEN:
+    ts_client = ts.TimesheetClient(
+        token=cfg.TOKEN,
+        base_url=cfg.BASE_URL,
+    )
+elif cfg.USERNAME and cfg.PW:
+    ts_client = ts.TimesheetClient(
+        username=cfg.USERNAME,
+        password=cfg.PW,
+        base_url=cfg.BASE_URL,
+    )
+else:
+    raise ValueError("Either username/password or token must be provided.")
 
 @app.tool()
 def get_projects() -> list[models.Project]:

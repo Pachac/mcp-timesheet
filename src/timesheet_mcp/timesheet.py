@@ -3,19 +3,24 @@ import timesheet_mcp.models as models
 
 class TimesheetClient:
     token = None
-    def __init__(self, username: str, password: str):
-        self.base_url = "https://timesheet.actum.cz/api"
-        self.login(username, password)
+    def __init__(self, username: str = None, password: str = None, token: str = None, base_url: str = "https://timesheet.actum.cz/api"):
+        self.base_url = base_url
+        if token:
+            self.token = token
+        elif username and password:
+            self.token = self.login(username, password)
+        else:
+            raise ValueError("Either username/password or token must be provided.")
 
-    def login(self, username: str, password: str):
-        url = f"{self.base_url}/login"
+    def login(username: str, password: str, base_url: str = "https://timesheet.actum.cz/api") -> str:
+        url = f"{base_url}/login"
         data = {
             "username": username,
             "password": password
         }
         response = requests.post(url, json=data)
         if response.status_code == 200:
-            self.token = response.text.strip('"')
+            return response.text.strip('"')
         else:
             raise Exception("Login failed: " + response.text)
 
