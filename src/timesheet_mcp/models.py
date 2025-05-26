@@ -2,25 +2,40 @@ from pydantic import BaseModel, field_validator
 import re
 from datetime import datetime, timedelta
 
-class RedmineUser(BaseModel):
+def sanitize_string(value):
+    """
+    Sanitize a string by removing leading and trailing whitespace.
+    """
+    if not isinstance(value, str):
+        return value
+    return value.replace("|", "\\|").strip()
+
+class BaseTimesheetClass(BaseModel):
+    @field_validator("*", mode="before")
+    @classmethod
+    def validate_non_empty(cls, value):
+        return sanitize_string(value)
+
+
+class RedmineUser(BaseTimesheetClass):
     id: int
     name: str
 
-class Project(BaseModel):
+class Project(BaseTimesheetClass):
     id: int
     name: str
     parent: str | None = None
     grandparent: str | None = None
 
-class Activity(BaseModel):
+class Activity(BaseTimesheetClass):
     id: int
     name: str
 
-class Issue(BaseModel):
+class Issue(BaseTimesheetClass):
     id: int | None = None
     subject: str | None = None
 
-class TimesheetEntry(BaseModel):
+class TimesheetEntry(BaseTimesheetClass):
     id: int
     hours: float
     comments: str
@@ -43,7 +58,7 @@ class TimesheetEntry(BaseModel):
             adjusted = next_midnight
         return adjusted.date().isoformat()
 
-class TimesheetEntryInput(BaseModel):
+class TimesheetEntryInput(BaseTimesheetClass):
     hours: float
     comments: str
     activity_id: int
